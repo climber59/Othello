@@ -1,7 +1,6 @@
 %{
 change grid line thickness on resize?
 
-
 undo?
 -complicated to undo flip
 %}
@@ -13,15 +12,15 @@ function [] = Othello()
 	wp = [];
 	player = 1;
 	board = [];
-	pot = [];
+	legalMoves = [];
 	gameOver = false;
 	score = [];
 	ng = [];
 	
-	figureSetup();
-	firstGame();
+	figureSetup(); % initialize the figure
+	newGame();
 	
-	
+	% handles mouse clicks
 	function [] = click(~,~)
 		if gameOver
 			return
@@ -30,21 +29,17 @@ function [] = Othello()
 		m = round(ax.CurrentPoint([1,3])); % gives col, row
 		
 		if m(2)<=size(board,1) && m(1)<=size(board,2) && board(m(2),m(1))==0 %empty square within board
-			go = false;
-			for i=1:length(pot.XData) % guarantees flip
-				if m(1)==pot.XData(i) && m(2)==pot.YData(i)
-					go = true;
-					break
-				end
+			i = 1;
+			while i <= length(legalMoves.XData) && ~(m(1)==legalMoves.XData(i) && m(2)==legalMoves.YData(i)) % checks if it's a legal move
+				i = i + 1;
 			end
-			if ~go % moves must flip tiles
+			if i > length(legalMoves.XData) % stop if it wasn't a legal move
 				return
 			end
 
 			board(m(2),m(1)) = player;
-			flip(m);
-% 			length(wp.XData)
-			score.String = sprintf('Black: %2d  White: %2d',length(bp.XData), length(wp.XData));
+			flip(m); % flip tiles
+			score.String = sprintf(score.UserData.str,length(bp.XData), length(wp.XData));
 			
 			player = -player;
 			if nnz(board)~=numel(board) % check if full
@@ -53,7 +48,7 @@ function [] = Othello()
 				if moveable 
 					[r,c] = ind2sub(size(board),moves);
 				else
-					player = -player;
+					player = -player; % player is forced to pass with no available moves
 					[moveable, moves] = moveCheck(); %check if other player can move
 					if moveable
 						[r,c] = ind2sub(size(board),moves);
@@ -61,7 +56,8 @@ function [] = Othello()
 						r = [];
 						c = [];
 						gameOver = true;
-						%no one can make a move, game over
+						%no one can make a move, game over. may not be
+						%possible to achieve this
 					end
 				end
 			else
@@ -70,12 +66,13 @@ function [] = Othello()
 				%board full, game over
 				gameOver = true;
 			end
-			pot.XData = c;
-			pot.YData = r;
-			pot.MarkerFaceColor = ones(1,3)*(player==-1);
+			legalMoves.XData = c;
+			legalMoves.YData = r;
+			legalMoves.MarkerFaceColor = ones(1,3)*(player==-1);
 		end
 	end
 	
+	% finds all legal moves. returns [false, []] if none
 	function [bool, moves] = moveCheck()
 		% get empty squares adjacent to filled pieces (opp color pieces)
 		% -- check each to see if it would cause a flip
@@ -104,10 +101,11 @@ function [] = Othello()
 		bool = ~isempty(moves);
 	end
 	
+	% flips tiles
 	function [] = flip(m)
 		%{
-		check for adjacent squares of opposite color
-		--where found, travel to find same color
+		check for squares of opposite color adjacent to m =
+		--where found, travel to find m's color
 		----flip all in-between
 		%}
 		for i = 0:pi/4:7*pi/4
@@ -148,50 +146,33 @@ function [] = Othello()
 						wp.XData(k) = c;
 						wp.YData(k) = r;
 					end
-					
 				end
 			end
 		end
 	end
 	
+	% resets things to start a neww game
 	function [] = newGame(~,~)
-		bp.XData = [4 5];
+		bp.XData = [4 5]; % manually set initial pieces and moves
 		bp.YData = [4 5];
 		wp.XData = [5 4];
 		wp.YData = [4 5];
-		pot.XData = [3 4 5 6];
-		pot.YData = [5 6 3 4];
-		pot.MarkerFaceColor = [0 0 0]; %unless i want to vary who starts
+		legalMoves.XData = [3 4 5 6];
+		legalMoves.YData = [5 6 3 4];
+		score.String = sprintf(score.UserData.str,2, 2);
+		legalMoves.MarkerFaceColor = [0 0 0];
 		
-		player = 1;
+		player = 1; % set game variables to intial values
 		board = zeros(8);
 		board([28, 37]) = 1;
 		board([29, 36]) = -1;
 		gameOver = false;
-		score.String = sprintf('Black: %2d  White: %2d',2, 2);
 	end
 	
-	function [] = firstGame()
-		l = matlab.graphics.primitive.Line.empty;
-		for i=0.5:8.5
-			l(end+1) = line([0.5 8.5], [i i]);
-			l(end+1) = line([i i], [0.5 8.5]);
-		end
-		for i=1:length(l)
-			l(i).LineWidth = 2;
-			l(i).Color = [0 0 0];
-		end
-		
-		bp = plot([4 5], [4 5],'o','MarkerFaceColor',[0 0 0],'MarkerSize',30,'MarkerEdgeColor','none');
-		wp = plot([5 4], [4 5],'o','MarkerFaceColor',[1 1 1],'MarkerSize',30,'MarkerEdgeColor','none');
-		pot = plot([3 4 5 6],[5 6 3 4],'o','MarkerFaceColor',[0 0 0],'MarkerSize',15,'MarkerEdgeColor','none');
-
-		newGame();
-	end
-	
+	% creates the figure and other graphics objects
 	function [] = figureSetup()
 		f = figure(1);
-		clf
+		clf('reset');
 		f.MenuBar = 'none';
 		f.Name = 'Othello';
 		f.NumberTitle = 'off';
@@ -213,12 +194,14 @@ function [] = Othello()
 		score = uicontrol(...
 			'Parent',f,...
 			'Style','text',...
-			'String',sprintf('Black: %d  White: %d',2, 2),...
 			'Units','normalized',...
 			'Position',[0 0.955 1 0.04],...
 			'FontSize',12,...
 			'HorizontalAlignment','center',...
 			'FontName','FixedWidth');
+		score.UserData.str = 'Black: %2d  White: %2d';
+		score.String = sprintf(score.UserData.str,2, 2);
+		
 		ng = uicontrol(...
 			'Parent',f,...
 			'Style','pushbutton',...
@@ -227,10 +210,25 @@ function [] = Othello()
 			'String', 'New Game',...
 			'FontSize',12,...
 			'Callback',@newGame);
+		
+		l = matlab.graphics.primitive.Line.empty;
+		for i = 0.5:8.5
+			l(end+1) = line([0.5 8.5], [i i]);
+			l(end+1) = line([i i], [0.5 8.5]);
+		end
+		for i = 1:length(l)
+			l(i).LineWidth = 2;
+			l(i).Color = [0 0 0];
+		end
+		
+		bp = plot([4 5], [4 5],'o','MarkerFaceColor',[0 0 0],'MarkerSize',30,'MarkerEdgeColor','none');
+		wp = plot([5 4], [4 5],'o','MarkerFaceColor',[1 1 1],'MarkerSize',30,'MarkerEdgeColor','none');
+		legalMoves = plot([3 4 5 6],[5 6 3 4],'o','MarkerFaceColor',[0 0 0],'MarkerSize',15,'MarkerEdgeColor','none');
 	end
 	
+	% handles resizing the figure window
 	function [] = resize(~,~)
-		if ~isvalid(ax) %is an issue when hitting run when fig is already open
+		if ~isvalid(ax) %is an issue when hitting run when fig is already open or if the user deletes the axes outside the game
 			return
 		end
 		ax.Units = 'pixels';
@@ -241,7 +239,7 @@ function [] = Othello()
 		ng.FontSize = 12*scale;
 		bp.MarkerSize = 30*scale;
 		wp.MarkerSize = 30*scale;
-		pot.MarkerSize = 15*scale;
+		legalMoves.MarkerSize = 15*scale;
 	end
 end
 
