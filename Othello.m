@@ -43,7 +43,7 @@ function [] = Othello()
 
 			board(m(2),m(1)) = player;
 			flip(m);
-			
+% 			length(wp.XData)
 			score.String = sprintf('Black: %2d  White: %2d',length(bp.XData), length(wp.XData));
 			
 			player = -player;
@@ -133,7 +133,7 @@ function [] = Othello()
 					j = find(board==1);
 					bp.XData = zeros(1,length(j));
 					bp.YData = zeros(1,length(j));
-					for k = 1:length(j);
+					for k = 1:length(j)
 						[r,c] = ind2sub(size(board),j(k));
 						bp.XData(k) = c;
 						bp.YData(k) = r;
@@ -143,7 +143,7 @@ function [] = Othello()
 					j = find(board==-1);
 					wp.XData = zeros(1,length(j));
 					wp.YData = zeros(1,length(j));
-					for k = 1:length(j);
+					for k = 1:length(j)
 						[r,c] = ind2sub(size(board),j(k));
 						wp.XData(k) = c;
 						wp.YData(k) = r;
@@ -215,7 +215,7 @@ function [] = Othello()
 			'Style','text',...
 			'String',sprintf('Black: %d  White: %d',2, 2),...
 			'Units','normalized',...
-			'Position',[0.3 0.955 0.4 0.04],...
+			'Position',[0 0.955 1 0.04],...
 			'FontSize',12,...
 			'HorizontalAlignment','center',...
 			'FontName','FixedWidth');
